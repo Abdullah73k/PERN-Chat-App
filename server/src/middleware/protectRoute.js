@@ -9,7 +9,15 @@ const protectRoute = async (req, res, next) => {
       return res.status(401).json({ error: "Unauthorized - No token provided" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        if (err.name === "TokenExpiredError") {
+          return res.status(401).json({ error: "Unauthorized - Token expired" });
+        }
+        return res.status(401).json({ error: "Unauthorized - Invalid Token" });
+      }
+      return decoded;
+    });
 
     if (!decoded) {
       return res.status(401).json({ error: "Unauthorized - Invalid Token" });
@@ -28,7 +36,7 @@ const protectRoute = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.log("Error in protectRoute middleware", error.message);
+    console.error("Error in protectRoute middleware:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
